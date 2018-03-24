@@ -1,0 +1,174 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using System.IO;
+using UnityEngine.UI;
+
+public class PlayerController : MonoBehaviour {
+    static PlayerController _instance;
+    public static PlayerController Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindObjectOfType<PlayerController>();
+            }
+            return _instance;
+        }
+    }
+    static public float point;
+    static public float poinT;
+    public float speed = 1f,hight1;
+    Rigidbody2D myBD;
+    public Slider volume;
+    bool ground1, ground2=false;
+    
+    float move;
+    //sound
+    public  AudioClip clipJump,hurd;
+    private AudioSource audioSource;
+	// Use this for initialization
+	void Start () {
+       
+        myBD = GetComponent<Rigidbody2D>();
+        ground1 = true;
+        _instance = this;
+        point = 0f;
+        poinT = 0f;
+        //s
+        audioSource = GetComponent<AudioSource>();
+        audioSource.clip = clipJump;
+    }
+	public void Jump()
+    {
+        audioSource.clip = clipJump;
+        audioSource.Play();
+        myBD.velocity = new Vector2(myBD.velocity.x, hight1);
+       
+    }
+    
+    //sound
+
+    public void hurdAudio()
+    {
+        audioSource.clip = hurd;
+        audioSource.Play();
+        
+    }
+   
+
+	// Update is called once per frame
+	void FixedUpdate () {
+        //reset ground
+        if (ground1)
+        {
+            ground2 = false;
+            
+        }
+        MoveMouse();
+    }
+    private void OnCollisionEnter2D(Collision2D other)
+    {
+        if (other.gameObject.tag == "ground"|| other.gameObject.tag == "block")
+        {
+            ground1 = true;
+        }
+        if (other.gameObject.tag == "check") //kiem tra 
+        {
+
+            Vector3 curT = this.transform.position;
+            curT.x *= -1;
+            this.transform.position = curT;
+        }
+       
+    }
+   
+    private void LateUpdate()
+    {
+        point = (int)(transform.position.y * 10);
+        if (point > poinT)
+        {
+            poinT = point;
+        }
+        GameManager.Intance.Score(poinT);
+    }
+    private void Update()
+    {
+        move = Input.GetAxis("Horizontal");
+        myBD.velocity = new Vector3(move * speed, myBD.velocity.y);
+        //jump double
+        if (Input.GetKeyDown(KeyCode.Space) && (ground1 || !ground2) )
+        {
+
+            Jump();
+            if (!ground1 && !ground2)
+                ground2 = true;
+            ground1 = false;
+            
+        }
+        audioSource.volume = volume.value;
+
+        
+    }
+    #region Test Move by Mouse
+    bool mouseUp;
+    Vector3 PosDown, PosUp;
+    Vector3 dir;
+    float angle;
+    void Director()
+    {
+        dir = PosUp - PosDown;
+        angle = Vector3.Angle(dir, Vector3.up);
+        
+    }
+    void MoveMouse()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            mouseUp = false;
+            PosDown = Input.mousePosition;
+        }
+        if (Input.GetMouseButtonUp(0))
+        {
+            mouseUp = true;
+            PosUp = Input.mousePosition;
+        }
+        Director();
+        checkMouse();
+        return;
+    }
+    void JumpT()
+    {
+        if (ground1||!ground2)
+        {
+            myBD.velocity = new Vector2(myBD.velocity.x, hight1);
+            //ground1 = false;
+        }
+        if (!ground1 && !ground2)
+            ground2 = true;
+        ground1 = false;
+    }
+    void checkMouse()
+    {
+        if (!mouseUp) { return; }
+        if (PosUp == PosDown) { return; }
+        if (PosUp.y > PosDown.y && Mathf.Abs(angle) <= 45) 
+        {
+            JumpT();
+            
+        }
+        if (PosUp.x > PosDown.x && Mathf.Abs(angle) > 45)
+        {
+            myBD.velocity = new Vector2(speed, myBD.velocity.y);
+           
+        }
+        if (PosUp.x < PosDown.x && Mathf.Abs(angle) > 45)
+        {
+            myBD.velocity = new Vector2(-speed, myBD.velocity.y);
+           
+        }
+    }
+
+    #endregion
+}
